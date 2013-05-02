@@ -20,6 +20,8 @@ module.exports = exports = nano = function database_module(cfg) {
 	var fs = require("fs");
 	var public_functions = {}, request_opts = {}, db;
 	var testData;
+	var testViews;
+	var testLists;
 
 	// NOTE: This is a Nano extension
 	function uuids(params, callback) {
@@ -188,17 +190,65 @@ module.exports = exports = nano = function database_module(cfg) {
 		}
 
 		function view_docs(design_name, view_name, params, callback) {
+
 			var rows = new Array();
-			var i;
-			for (i = 0; i < testData.test.rows.length; i++) {
-				rows.push({
-					key : [],
-					value : testData.test.rows[i]
+			var i, j;
+
+			// If test views are defined, finds one with the given name and
+			// executes it against test data
+			if (testViews && testViews !== null) {
+				for (j = 0; j < testViews.length; j++) {
+					var view = testViews[j];
+					if (view.name === (design_name + "/" + view_name)) {
+						return callback(null, {
+							rows : view.func(testData.test.rows)
+						});
+					}
+				}
+				return callback({
+					err : 404
+				}, null);
+			} else {
+				// Default view returns all rows
+				for (i = 0; i < testData.test.rows.length; i++) {
+					rows.push({
+						key : [],
+						value : testData.test.rows[i]
+					});
+				}
+				return callback(null, {
+					rows : rows
 				});
 			}
-			return callback(null, {
-				rows : rows
-			});
+		}
+
+		// NOTE: this a function added by AURIN
+		function list_view_docs(design_name, list_name, view_name, params, callback) {
+
+			var rows = new Array();
+			var i, j;
+
+			// If test lists are defined, finds one with the given name and
+			// executes it against test data returned by the view
+			if (testLists && testLists !== null) {
+				for (j = 0; j < testLists.length; j++) {
+					var list = testLists[j];
+					if (list.name === (design_name + "/" + list_name)) {
+						return view_docs(design_name, view_name, params,
+								function(err, rows) {
+									return callback(null, list.func(null, rows));
+								});
+					}
+				}
+				return callback({
+					err : 404
+				}, null);
+			} else {
+				// Default list returns an empty object
+				return callback({
+					err : 404
+				}, {});
+			}
 		}
 
 		function show_doc(design_name, show_fn_name, docid, params, callback) {
@@ -294,6 +344,7 @@ module.exports = exports = nano = function database_module(cfg) {
 		};
 
 		public_functions.view = view_docs;
+		public_functions.listview = list_view_docs;
 		public_functions.view.compact = function(design_name, cb) {
 			return compact_db(db_name, design_name, cb);
 		};
@@ -320,9 +371,17 @@ module.exports = exports = nano = function database_module(cfg) {
 		// Quick patch to tap into uuids, it'll work until the actual request object
 		// is used for something else
 		request : uuids,
-		// NOTE This is just for the mock object
+		// NOTE: This is just for the mock object
 		setTestData : function setTestData(data) {
 			testData = data;
+		},
+		// NOTE: This is just for the mock object
+		setTestViews : function setTestViews(views) {
+			testViews = views;
+		},
+		// NOTE: This is just for the mock object
+		setTestLists : function setTestLists(lists) {
+			testLists = lists;
 		}
 	};
 

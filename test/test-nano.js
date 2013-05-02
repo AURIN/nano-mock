@@ -7,7 +7,7 @@ describe("Nano mock", function() {
 	var expect = chai.expect;
 	var should = chai.should();
 	var db, nano;
-	var testData= require("./testdata.js");
+	var testData = require("./testdata.js");
 
 	before(function(done) {
 		nano = require("../nanoMock.js")({
@@ -28,6 +28,100 @@ describe("Nano mock", function() {
 	it("a mock document is returned", function(done) {
 		db.get(testData.test.uuids[0], null, function(err, doc) {
 			expect(doc.type).to.equal(testData.test.rows[0].type);
+			done();
+		});
+	});
+
+	it("all test documents are returned when no view is defined", function(done) {
+		db.view("foo", "bar", null, function(err, docs) {
+			expect(docs.rows.length).to.equal(testData.test.rows.length);
+			done();
+		});
+	});
+
+	it("an error is raised when no view with a given name is defined", function(
+			done) {
+		nano.setTestViews([ {
+			name : "foo/bar",
+			func : function(rows) {
+				return [ {} ];
+			}
+		} ]);
+		db.view("foo", "xxx", null, function(err, docs) {
+			expect(err.err).to.equal(404);
+			nano.setTestViews(null);
+			done();
+		});
+	});
+
+	it("some documents are returned when a view function is defined", function(
+			done) {
+		nano.setTestViews([ {
+			name : "foo/bar",
+			func : function(rows) {
+				return [ {
+					key : "1",
+					value : {
+						mimetype : rows[0].data.mimetype
+					}
+				} ];
+			}
+		} ]);
+		db.view("foo", "bar", null, function(err, docs) {
+			expect(docs.rows[0].value.mimetype).to
+					.equal(testData.test.rows[0].data.mimetype);
+			nano.setTestViews(null);
+			done();
+		});
+	});
+
+	it("an empty object is returned when no list is defined", function(done) {
+		db.listview("foo", "bar", "etc", null, function(err, docs) {
+			expect(err.err).to.equal(404);
+			done();
+		});
+	});
+
+	it("an error is raised when no list with a given name is defined", function(
+			done) {
+		nano.setTestLists([ {
+			name : "foo/etc",
+			func : function(rows) {
+				return [ {} ];
+			}
+		} ]);
+		db.listview("foo", "xxx", "bar", null, function(err, doc) {
+			expect(err.err).to.equal(404);
+			nano.setTestLists(null);
+			done();
+		});
+	});
+
+	it("a document is returned when a list function is defined", function(done) {
+		nano.setTestViews([ {
+			name : "foo/bar",
+			func : function(rows) {
+				return [ {
+					key : "1",
+					value : {
+						mimetype : rows[0].data.mimetype
+					}
+				} ];
+			}
+		} ]);
+		nano.setTestLists([ {
+			name : "foo/etc",
+			func : function(err, rows) {
+				return {
+					type : rows.rows[0].value.mimetype
+				};
+			}
+		} ]);
+		db.listview("foo", "etc", "bar", null, function(err, doc) {
+			console.log("YYY " + JSON.stringify(doc)); 
+			expect(doc.type).to.equal(testData.test.rows[0].data.mimetype);
+			nano.setTestViews(null);
+			nano.setTestLists(null);
 			done();
 		});
 	});

@@ -201,7 +201,10 @@ module.exports = exports = nano = function database_module(cfg) {
 					var view = testViews[j];
 					if (view.name === (design_name + "/" + view_name)) {
 						return callback(null, {
-							rows : view.func(testData.test.rows)
+							rows : view.func(testData.test.rows),
+							headers : {
+								status : 200
+							}
 						});
 					}
 				}
@@ -217,7 +220,10 @@ module.exports = exports = nano = function database_module(cfg) {
 					});
 				}
 				return callback(null, {
-					rows : rows
+					rows : rows,
+					headers : {
+						status : 200
+					}
 				});
 			}
 		}
@@ -236,7 +242,8 @@ module.exports = exports = nano = function database_module(cfg) {
 					if (list.name === (design_name + "/" + list_name)) {
 						return view_docs(design_name, view_name, params,
 								function(err, rows) {
-									return callback(null, list.func(null, rows));
+									var res = list.func(null, rows);
+									return callback(null, res.doc, res.headers); 
 								});
 					}
 				}

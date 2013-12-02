@@ -13,7 +13,7 @@
     "email": "luca.morandini@unimelb.edu.au"
   },
   "contributors": [],
-  "main": "./nanoMock.js",
+  "main": "./nano-mock.js",
   "dependencies": {
   },
   "devDependencies": {

@@ -10,7 +10,7 @@ describe("Nano mock", function() {
 	var testData = require("./testdata.js");
 
 	before(function(done) {
-		nano = require("../nanoMock.js")({
+		nano = require("../nano-mock.js")({
 			url : "http://foo:5984"
 		});
 		db = nano.use("test");
@@ -111,14 +111,16 @@ describe("Nano mock", function() {
 		} ]);
 		nano.setTestLists([ {
 			name : "foo/etc",
-			func : function(err, rows) {
+			func : function(err, doc) {
 				return {
-					type : rows.rows[0].value.mimetype
+					doc : {
+						type : doc.rows[0].value.mimetype
+					},
+					headers : {}
 				};
 			}
 		} ]);
 		db.listview("foo", "etc", "bar", null, function(err, doc) {
-			console.log("YYY " + JSON.stringify(doc)); 
 			expect(doc.type).to.equal(testData.test.rows[0].data.mimetype);
 			nano.setTestViews(null);
 			nano.setTestLists(null);

@@ -1,6 +1,6 @@
 {
   "name": "nano-mock",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Mock object for Nano",
   "private": true,
   "keywords": [
@@ -13,7 +13,7 @@
     "email": "luca.morandini@unimelb.edu.au"
   },
   "contributors": [],
-  "main": "./nanoMock.js",
+  "main": "./nano-mock.js",
   "dependencies": {
   },
   "devDependencies": {
@@ -24,7 +24,7 @@
   "engines": {
     "node": "0.6.x"
   },
-  "_id": "au.org.aurin.nano-mock@0.1.0",
+  "_id": "au.org.aurin.nano-mock@0.1.1",
   "optionalDependencies": {},
   "_engineSupported": true,
   "_npmVersion": "1.1.4",

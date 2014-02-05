@@ -1,6 +1,6 @@
 /**
  * nanoMock.js
- * 
+ *
  * Mock of Nano
  */
 "use strict";
@@ -8,7 +8,7 @@
 /**
  * Mock object replacing Nano (Node.js library for CouchDB) in unit tests.
  * testData are to be set by calling the setTestData method
- * 
+ *
  * @param cfg
  *          Is the usual Nano configuration object
  */
@@ -91,10 +91,11 @@ module.exports = exports = nano = function database_module(cfg) {
 
 		var public_functions = {};
 
-		function insert_doc(doc, params, callback) {
+		function insert_doc(doc, params, rev, callbackIn) {
 
 			var i;
 			var docid = (typeof params === "object") ? params.doc_name : params;
+			var callback = (typeof rev === "function") ? rev : callbackIn;
 
 			var response = {
 				headers : {
@@ -137,12 +138,10 @@ module.exports = exports = nano = function database_module(cfg) {
 			return callback(err, null);
 		}
 
-		function get_doc(docid, params, callback) {
+		function get_doc(docid, params, callbackIn) {
 			var i;
 			var stream = new events.EventEmitter();
-			if ((typeof params) === "function") {
-				callback = params;
-			}
+			var callback = (typeof params === "function") ? params : callbackIn;
 
 			for (i = 0; i < testData.test.rows.length; i++) {
 				if (testData.test.rows[i].datasetid === docid) {
@@ -309,8 +308,10 @@ module.exports = exports = nano = function database_module(cfg) {
 			return fs.createWriteStream("./target/test.xxx");
 		}
 
-		function get_att(docid, att_name, params, callback) {
+		function get_att(docid, att_name, params, callbackIn) {
 			var i;
+			var callback = (typeof params === "function") ? params : callbackIn;
+
 			for (i = 0; i < testData.test.rows.length; i++) {
 				var value = testData.test.rows[i];
 				if (value.datasetid === docid) {
@@ -325,7 +326,7 @@ module.exports = exports = nano = function database_module(cfg) {
 				message : "Document not found",
 			};
 			err["status-code"] = 404;
-			return callback(err, result);
+			return callback(err);
 		}
 
 		function destroy_att(doc_name, att_name, rev, callback) {

@@ -76,7 +76,7 @@ describe("Nano mock", function() {
 	});
 
 	it("an empty object is returned when no list is defined", function(done) {
-		db.listview("foo", "bar", "etc", null, function(err, docs) {
+		db.view_docs_with_list("foo", "bar", "etc", null, function(err, docs) {
 			expect(err.err).to.equal(404);
 			done();
 		});
@@ -90,7 +90,7 @@ describe("Nano mock", function() {
 				return [ {} ];
 			}
 		} ]);
-		db.listview("foo", "xxx", "bar", null, function(err, doc) {
+		db.view_docs_with_list("foo", "xxx", "bar", null, function(err, doc) {
 			expect(err.err).to.equal(404);
 			nano.setTestLists(null);
 			done();
@@ -120,7 +120,7 @@ describe("Nano mock", function() {
 				};
 			}
 		} ]);
-		db.listview("foo", "etc", "bar", null, function(err, doc) {
+		db.view_docs_with_list("foo", "bar", "etc", null, function(err, doc) {
 			expect(doc.type).to.equal(testData.test.rows[0].data.mimetype);
 			nano.setTestViews(null);
 			nano.setTestLists(null);

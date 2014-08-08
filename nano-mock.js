@@ -247,8 +247,7 @@ module.exports = exports = nano = function database_module(cfg) {
 			}
 		}
 
-		// NOTE: this a function added by AURIN
-		function list_view_docs(design_name, list_name, view_name, params, callback) {
+		function list_view_docs(design_name, view_name, list_name, params, callback) {
 
 			var rows = new Array();
 			var i, j;

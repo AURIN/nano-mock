@@ -371,7 +371,7 @@ module.exports = exports = nano = function database_module(cfg) {
 		};
 
 		public_functions.view = view_docs;
-		public_functions.view_docs_with_list = view_docs_with_list;
+		public_functions.view_with_list = view_docs_with_list;
 		public_functions.view.compact = function(design_name, cb) {
 			return compact_db(db_name, design_name, cb);
 		};

@@ -1,6 +1,6 @@
 {
   "name": "nano-mock",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Mock object for Nano",
   "private": true,
   "keywords": [
@@ -17,14 +17,14 @@
   "dependencies": {
   },
   "devDependencies": {
-    "chai": "1.5.0",
+    "chai": "1.9.1",
     "mocha": "1.6.0"
   },
   "scripts": {},
   "engines": {
     "node": ">=0.6.x"
   },
-  "_id": "au.org.aurin.nano-mock@0.1.4",
+  "_id": "au.org.aurin.nano-mock@0.1.5",
   "optionalDependencies": {},
   "_engineSupported": true,
   "_npmVersion": "1.1.4",

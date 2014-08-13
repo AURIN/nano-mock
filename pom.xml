@@ -5,13 +5,13 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>au.org.aurin</groupId>
   <artifactId>nano-mock</artifactId>
-  <version>0.1.4</version>
+  <version>0.1.5</version>
 
   <properties>
     <version>${project.version}</version>
     <nodeVersion>>=0.6.x</nodeVersion>
     <npmVersion>1.1.4</npmVersion>
-    <chaiVersion>1.5.0</chaiVersion>
+    <chaiVersion>1.9.1</chaiVersion>
     <mochaVersion>1.6.0</mochaVersion>
   </properties>
 

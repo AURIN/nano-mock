@@ -107,7 +107,7 @@ module.exports = exports = nano = function database_module(cfg) {
       for (i = 0; i < testData.test.rows.length; i++) {
         if (testData.test.rows[i].datasetid === docid) {
           // Used only to test the datastore
-          if (testData.test.rows[i].data.metadata) {
+          if (testData.test.rows[i].data && testData.test.rows[i].data.metadata) {
             testData.test.rows[i].data.metadata.datastore.blobmetadata.timestamp = doc.data.metadata.datastore.blobmetadata.timestamp;
           }
           return callback(getInsertErr(i), response);

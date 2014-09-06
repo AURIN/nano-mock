@@ -94,14 +94,17 @@ module.exports = exports = nano = function database_module(cfg) {
     function insert_doc(doc, params, rev, callbackIn) {
 
       var i;
-      var docid = (typeof params === "object") ? params.doc_name : params;
+      var docid = (typeof params === "object" && params) ? params.doc_name
+          : params;
       var callback = (typeof rev === "function") ? rev : callbackIn;
       var err = null;
 
       var response = {
         headers : {
           statusCode : 200
-        }
+        },
+        id : docid,
+        rev : "1"
       };
 
       for (i = 0; i < testData.test.rows.length; i++) {
@@ -119,8 +122,16 @@ module.exports = exports = nano = function database_module(cfg) {
           message : "Document not found",
         };
         err["status-code"] = 404;
+        response = null;
+      } else {
+        err = null;
+        response = {
+          id : "123",
+          rev : "1"
+        };
       }
-      return callback(err, null);
+
+      return callback(err, response);
     }
 
     function destroy_doc(docid, rev, callback) {

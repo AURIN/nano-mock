@@ -47,6 +47,17 @@ module.exports = exports = nano = function database_module(cfg) {
     });
   }
 
+  function auth(user, pass, cb) {
+    if (user === "xxx") {
+      cb({
+        status_code : 401,
+        message : "Name or password is incorrect"
+      }, {}, {});
+    } else {
+      cb(null, {}, {});
+    }
+  }
+
   function create_db(db_name, callback) {
     return callback(null, {
       headers : {
@@ -406,8 +417,9 @@ module.exports = exports = nano = function database_module(cfg) {
       compact : compact_db,
       replicate : replicate_db,
       changes : changes_db,
-      follow : follow_db
+      follow : follow_db,
     },
+    auth : auth,
     use : document_module,
     scope : document_module,
     // Quick patch to tap into uuids, it'll work until the actual request object

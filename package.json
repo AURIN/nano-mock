@@ -1,6 +1,6 @@
 {
   "name": "nano-mock",
-  "version": "0.1.9",
+  "version": "1.0.0",
   "description": "Mock object for Nano",
   "private": true,
   "keywords": [
@@ -14,21 +14,22 @@
   },
   "contributors": [],
   "main": "./nano-mock.js",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "chai": "1.9.1",
-    "mocha": "1.6.0"
+    "mocha": "6.2.x"
   },
-  "scripts": {},
+  "scripts": {
+    "test": "mocha test/test-nano.js --no-colors --timeout 500"
+  },
   "engines": {
-    "node": ">=0.6.x"
+    "node": "12.13.x"
   },
-  "_id": "au.org.aurin.nano-mock@0.1.9",
+  "_id": "au.org.aurin.nano-mock@1.0.0",
   "optionalDependencies": {},
   "_engineSupported": true,
-  "_npmVersion": "1.1.4",
-  "_nodeVersion": ">=0.6.x",
+  "_npmVersion": "6.12.x",
+  "_nodeVersion": "12.13.x",
   "_defaultsLoaded": false,
   "_from": ""
 }

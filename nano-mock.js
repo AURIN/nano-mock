@@ -13,26 +13,33 @@
  *          Is the usual Nano configuration object
  */
 var nano;
+const events = require ("events");
+const fs = require ("fs");
+const _ = require ("underscore");
 
-module.exports = exports = nano = function database_module (cfg) {
+module.exports = nano = function database_module (cfg) {
 
-  var events = require ("events");
-  var fs = require ("fs");
   var public_functions = {}, request_opts = {}, db;
   var testData;
   var testViews;
   var testLists;
 
-  function getErr (i) {
-    return (typeof testData.test.rows[i].err === "undefined") ? null
-      : testData.test.rows[i].err;
-  }
+  const getTestDoc = (docid) => {
+    return _.find (testData.test.rows, (row) => {
+      return row.datasetid === docid;
+    });
+  };
 
-  function getInsertErr (i) {
-    return (typeof testData.test.rows[i].err === "undefined") ? null
-      : ((typeof testData.test.rows[i].insertErr === "undefined") ? getErr (i)
-        : testData.test.rows[i].insertErr);
-  }
+  const getErr = (testDoc) => {
+    return (typeof testDoc.err === "undefined") ? null
+      : testDoc.err;
+  };
+
+  const getInsertErr = (testDoc) => {
+    return (typeof testDoc.err === "undefined") ? null
+      : ((typeof testDoc.insertErr === "undefined") ? getErr (testDoc)
+        : testDoc.insertErr);
+  };
 
   // NOTE: This is a Nano extension
   function uuids (params, callback) {
@@ -104,11 +111,33 @@ module.exports = exports = nano = function database_module (cfg) {
 
     function insert_doc (doc, params, rev, callbackIn) {
 
-      var i;
       var docid = (typeof params === "object" && params) ? params.doc_name
         : params;
+
+      const testDoc = _.find (testData.test.rows, (row) => {
+        return row.datasetid === docid;
+      });
+
+      if (testDoc) {
+        // Used only to test the datastore
+        if (testDoc.data && testDoc.data.metadata) {
+          testDoc.data.metadata.datastore.blobmetadata.timestamp = doc.data.metadata.datastore.blobmetadata.timestamp;
+        }
+      }
+
       var callback = (typeof rev === "function") ? rev : callbackIn;
+      var rev = (typeof rev === "function") ? params.rev : rev;
       var err = null;
+
+
+      if (testDoc && testDoc.inserted && !rev) {
+        var err = {
+          message: "Document conflict error",
+        };
+        err["status-code"] = 409;
+        return callback (err, null);
+      } else {
+      }
 
       var response = {
         headers: {
@@ -118,15 +147,12 @@ module.exports = exports = nano = function database_module (cfg) {
         rev: "1"
       };
 
-      for (i = 0; i < testData.test.rows.length; i++) {
-        if (testData.test.rows[i].datasetid === docid) {
-          // Used only to test the datastore
-          if (testData.test.rows[i].data && testData.test.rows[i].data.metadata) {
-            testData.test.rows[i].data.metadata.datastore.blobmetadata.timestamp = doc.data.metadata.datastore.blobmetadata.timestamp;
-          }
-          return callback (getInsertErr (i), response);
-        }
+      if (testDoc.data && testDoc.data.metadata) {
+        testDoc.inserted = true;
+        testDoc.data.metadata.datastore.blobmetadata.timestamp = doc.data.metadata.datastore.blobmetadata.timestamp;
+        return callback (getInsertErr (testDoc), response);
       }
+
 
       if (docid) {
         var err = {
@@ -146,17 +172,16 @@ module.exports = exports = nano = function database_module (cfg) {
     }
 
     function destroy_doc (docid, rev, callback) {
-      var i;
-      for (i = 0; i < testData.test.rows.length; i++) {
-        if (testData.test.rows[i].datasetid === docid) {
-          testData.test.rows[i].datasetid = null; // XXX
-          var response = new events.EventEmitter ();
-          setTimeout (function () {
-            response.emit ("end", testData.test.rows[i].data);
-          }, 200);
-          return callback (null, testData.test.rows[i].data);
-        }
+      const testDoc = getTestDoc (docid);
+      if (testDoc) {
+        var response = new events.EventEmitter ();
+        testDoc.inserted = false;
+        setTimeout (function () {
+          response.emit ("end", testDoc.data);
+        }, 200);
+        return callback (null, testDoc.data);
       }
+
       var err = {
         message: "Document not found",
       };
@@ -165,49 +190,48 @@ module.exports = exports = nano = function database_module (cfg) {
     }
 
     function get_doc (docid, params, callbackIn) {
-      var i;
-      var stream = new events.EventEmitter ();
-      var callback = (typeof params === "function") ? params : callbackIn;
+      const testDoc = getTestDoc (docid);
+      const stream = new events.EventEmitter ();
+      const callback = (typeof params === "function") ? params : callbackIn;
 
-      for (i = 0; i < testData.test.rows.length; i++) {
-        if (testData.test.rows[i].datasetid === docid) {
-          var response = new events.EventEmitter ();
-          if (params === null || typeof params === "undefined"
-            || typeof params.rev === "undefined") {
+      if (testDoc && testDoc.inserted) {
+        var response = new events.EventEmitter ();
+        if (params === null || typeof params === "undefined"
+          || typeof params.rev === "undefined") {
 
-            // Used only to test the datastore
-            if (testData.test.rows[i].data.metadata) {
-              testData.test.rows[i].data.metadata.datastore.blobmetadata.attachment = {
-                _id: testData.test.rows[i].datasetid,
-                _rev: "10-eba93ccace15f970d9baa569cc4c4ab2"
-              };
-            }
-            return callback (getErr (i), {
-              _id: docid,
-              _rev: "10-eba93ccace15f970d9baa569cc4c4ab2",
-              data: testData.test.rows[i].data,
-              _attachments: {
-                blob: testData.test.rows[i].rawdata
-              }
-            });
-          } else {
-            return callback (getErr (i), {
-              metadata: {},
-              _attachments: {
-                blob: {
-                  length: 10
-                }
-              }
-            });
+          // Used only to test the datastore
+          if (testDoc.data.metadata) {
+            testDoc.data.metadata.datastore.blobmetadata.attachment = {
+              _id: testDoc.datasetid,
+              _rev: "10-eba93ccace15f970d9baa569cc4c4ab2"
+            };
           }
+          return callback (getErr (testDoc), {
+            _id: docid,
+            _rev: "10-eba93ccace15f970d9baa569cc4c4ab2",
+            data: testDoc.data,
+            _attachments: {
+              blob: testDoc.rawdata
+            }
+          });
+        } else {
+          return callback (getErr (testDoc), {
+            metadata: {},
+            _attachments: {
+              blob: {
+                length: 10
+              }
+            }
+          });
         }
       }
+
       var err = {
         message: "Document not found"
       };
       err["status-code"] = 404;
       return callback (err, null);
-    }
+    };
 
     function head_doc (docid, callback) {
       var result = {
@@ -348,19 +372,16 @@ module.exports = exports = nano = function database_module (cfg) {
     }
 
     function get_att (docid, att_name, params, callbackIn) {
-      var i;
+
       var callback = (typeof params === "function") ? params : callbackIn;
-      const istream = new (require ('stream').Readable)();
+      const istream = new (require ('stream').Readable) ();
       istream._read = () => {
       };
-
-      for (i = 0; i < testData.test.rows.length; i++) {
-        var value = testData.test.rows[i];
-        if (value.datasetid === docid) {
-          istream.push (testData.test.rows[i].rawData);
-          istream.push (null);
-          return istream;
-        }
+      const testDoc = getTestDoc (docid);
+      if (testDoc) {
+        istream.push (testDoc.rawData);
+        istream.push (null);
+        return istream;
       }
       var err = {
         message: "Document not found",
@@ -420,7 +441,7 @@ module.exports = exports = nano = function database_module (cfg) {
     return public_functions;
   }
 
-  // server level exports
+// server level exports
   public_functions = {
     db: {
       create: create_db,
@@ -455,8 +476,6 @@ module.exports = exports = nano = function database_module (cfg) {
   };
 
   public_functions.config = cfg;
-
-  // return document_module(db);
 
   return public_functions;
 };

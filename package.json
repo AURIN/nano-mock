@@ -1,6 +1,6 @@
 {
   "name": "nano-mock",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Mock object for Nano",
   "private": true,
   "keywords": [
@@ -14,7 +14,9 @@
   },
   "contributors": [],
   "main": "./nano-mock.js",
-  "dependencies": {},
+  "dependencies": {
+    "underscore": "1.9.x"
+  },
   "devDependencies": {
     "chai": "1.9.1",
     "mocha": "6.2.x"

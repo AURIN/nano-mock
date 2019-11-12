@@ -272,7 +272,13 @@ module.exports = nano = function database_module (cfg) {
           var view = testViews[j];
           if (view.name === (design_name + "/" + view_name)) {
             return callback (null, {
-              rows: view.func (testData.test.rows),
+              rows: _.filter (view.func (testData.test.rows), (row) => {
+                if (params.startkey && params.endkey) {
+                  return row.key[0] >= params.startkey[0] && (row.key[0] <= params.endkey[0] || params.endkey[0] == null);
+                } else {
+                  return true;
+                }
+              }),
               headers: {
                 status: 200
               }

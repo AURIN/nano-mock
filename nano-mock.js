@@ -24,7 +24,7 @@ module.exports = nano = function database_module (cfg) {
   var testViews;
   var testLists;
 
-  const getTestDoc = (docid) => {
+  const findTestDoc = (docid) => {
     return _.find (testData.test.rows, (row) => {
       return row.datasetid === docid;
     });
@@ -113,48 +113,55 @@ module.exports = nano = function database_module (cfg) {
 
       var docid = (typeof params === "object" && params) ? params.doc_name
         : params;
+      var callback = (typeof rev === "function") ? rev : callbackIn;
+      var rev = (typeof rev === "function") ? params.rev : rev;
+      var err = null;
+
+      if (doc.views && doc.lists) {
+        return callback (null, {
+          headers: {
+            statusCode: 200
+          },
+          id: docid,
+          rev: "1"
+        });
+      }
 
       const testDoc = _.find (testData.test.rows, (row) => {
         return row.datasetid === docid;
       });
 
       if (testDoc) {
-        // Used only to test the datastore
-        if (testDoc.data && testDoc.data.metadata) {
+
+        if (testDoc && testDoc.data && testDoc.data.metadata) {
           testDoc.data.metadata.datastore.blobmetadata.timestamp = doc.data.metadata.datastore.blobmetadata.timestamp;
+        }
+
+        if (testDoc && testDoc.inserted && !rev) {
+          var err = {
+            message: "Document conflict error",
+          };
+          err["status-code"] = 409;
+          return callback (err, null);
+        } else {
+        }
+
+        var response = {
+          headers: {
+            statusCode: 200
+          },
+          id: docid,
+          rev: "1"
+        };
+
+        if (testDoc.data && testDoc.data.metadata) {
+          testDoc.inserted = true;
+          testDoc.data.metadata.datastore.blobmetadata.timestamp = doc.data.metadata.datastore.blobmetadata.timestamp;
+          return callback (getInsertErr (testDoc), response);
         }
       }
 
-      var callback = (typeof rev === "function") ? rev : callbackIn;
-      var rev = (typeof rev === "function") ? params.rev : rev;
-      var err = null;
-
-
-      if (testDoc && testDoc.inserted && !rev) {
-        var err = {
-          message: "Document conflict error",
-        };
-        err["status-code"] = 409;
-        return callback (err, null);
-      } else {
-      }
-
-      var response = {
-        headers: {
-          statusCode: 200
-        },
-        id: docid,
-        rev: "1"
-      };
-
-      if (testDoc.data && testDoc.data.metadata) {
-        testDoc.inserted = true;
-        testDoc.data.metadata.datastore.blobmetadata.timestamp = doc.data.metadata.datastore.blobmetadata.timestamp;
-        return callback (getInsertErr (testDoc), response);
-      }
-
-
-      if (docid) {
+      if (docid && testDoc) {
         var err = {
           message: "Document not found",
         };
@@ -172,7 +179,7 @@ module.exports = nano = function database_module (cfg) {
     }
 
     function destroy_doc (docid, rev, callback) {
-      const testDoc = getTestDoc (docid);
+      const testDoc = findTestDoc (docid);
       if (testDoc) {
         var response = new events.EventEmitter ();
         testDoc.inserted = false;
@@ -190,7 +197,7 @@ module.exports = nano = function database_module (cfg) {
     }
 
     function get_doc (docid, params, callbackIn) {
-      const testDoc = getTestDoc (docid);
+      const testDoc = findTestDoc (docid);
       const stream = new events.EventEmitter ();
       const callback = (typeof params === "function") ? params : callbackIn;
 
@@ -306,33 +313,38 @@ module.exports = nano = function database_module (cfg) {
     }
 
     function view_docs_with_list (design_name, view_name, list_name, params,
-                                  callback) {
+                                  callbackIn) {
 
+      const callback = (typeof params === "function") ? params : callbackIn;
       var rows = new Array ();
       var i, j;
 
       // If test lists are defined, finds one with the given name and
       // executes it against test data returned by the view
-      if (testLists && testLists !== null) {
-        for (j = 0; j < testLists.length; j++) {
-          var list = testLists[j];
-          if (list.name === (design_name + "/" + list_name)) {
-            return view_docs (design_name, view_name, params,
-              function (err, rows) {
-                var res = list.func (null, rows);
-                return callback (null, res.doc, res.headers);
-              });
-          }
-        }
-        return callback ({
-          err: 404
-        }, null);
-      } else {
-        // Default list returns an empty object
-        return callback ({
-          err: 404
+      const list = _.find (testLists, (list) => {
+        return list.name === [design_name, list_name].join ('/');
+      });
+
+      if (!list) {
+        return callback({
+          err : 404
         }, {});
       }
+
+      return (() => {
+        const istream = new (require ('stream').Readable) ();
+        istream._read = () => {};
+        view_docs (design_name, view_name, params,
+          (err, viewResult) => {
+            var res = list.func (viewResult);
+            callback (null, res.doc, res.headers);
+            setTimeout (() => {
+              istream.push(JSON.stringify(res));
+              istream.push(null);
+            }, 500);
+          });
+        return istream;
+      }) ();
     }
 
     function show_doc (design_name, show_fn_name, docid, params, callback) {
@@ -349,7 +361,7 @@ module.exports = nano = function database_module (cfg) {
 
     function insert_att (docid, attachmentName, att, contentType, params,
                          callback) {
-      const ofile = "./target/test.xxx";
+      const ofile = `/tmp/${docid}.json`;
       const ostream = fs.createWriteStream (ofile);
       var result = {
         id: docid,
@@ -364,15 +376,12 @@ module.exports = nano = function database_module (cfg) {
         err["status-code"] = 404;
         callback (err, result);
       }
-      let i = 0;
-      for (; i < testData.test.rows.length; i++) {
-        var value = testData.test.rows[i];
-        if (value.datasetid === docid) {
-          break;
-        }
-      }
+
+      const testDoc = findTestDoc (docid);
       ostream.on ('close', () => {
-        testData.test.rows[i].rawData = fs.readFileSync (ofile)
+        if (testDoc) {
+          testDoc.rawData = fs.readFileSync (ofile)
+        }
       });
       return ostream;
     }
@@ -383,7 +392,7 @@ module.exports = nano = function database_module (cfg) {
       const istream = new (require ('stream').Readable) ();
       istream._read = () => {
       };
-      const testDoc = getTestDoc (docid);
+      const testDoc = findTestDoc (docid);
       if (testDoc) {
         istream.push (testDoc.rawData);
         istream.push (null);

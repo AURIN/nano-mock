@@ -127,9 +127,7 @@ module.exports = nano = function database_module (cfg) {
         });
       }
 
-      const testDoc = _.find (testData.test.rows, (row) => {
-        return row.datasetid === docid;
-      });
+      const testDoc = findTestDoc (docid);
 
       if (testDoc) {
 
@@ -170,7 +168,7 @@ module.exports = nano = function database_module (cfg) {
       } else {
         err = null;
         response = {
-          id: "123",
+          id: docid,
           rev: "1"
         };
       }
@@ -277,24 +275,31 @@ module.exports = nano = function database_module (cfg) {
       if (testViews && testViews !== null) {
         for (j = 0; j < testViews.length; j++) {
           var view = testViews[j];
+
           if (view.name === (design_name + "/" + view_name)) {
+            if (!view.rows && view.file) {
+              view.rows = JSON.parse (fs.readFileSync (view.file));
+            }
             return callback (null, {
-              rows: _.filter (view.func (testData.test.rows), (row) => {
-                if (params.startkey && params.endkey) {
+              rows: _.filter (view.func (view.rows), (row) => {
+                if (params && params.startkey && params.endkey) {
                   return row.key[0] >= params.startkey[0] && (row.key[0] <= params.endkey[0] || params.endkey[0] == null);
                 } else {
                   return true;
                 }
-              }),
-              headers: {
-                status: 200
-              }
+              }).sort ((a, b) => {
+                if (a.key.join ('_') < b.key.join ('_')) {
+                  return -1;
+                }
+                if (a.key.join ('_') > b.key.join ('_')) {
+                  return 1;
+                }
+                return 0;
+              }), headers: {status: 200}
             });
           }
         }
-        return callback ({
-          err: 404
-        }, null);
+        return callback ({err: 404}, null);
       } else {
         // Default view returns all rows
         for (i = 0; i < testData.test.rows.length; i++) {
@@ -303,12 +308,7 @@ module.exports = nano = function database_module (cfg) {
             value: testData.test.rows[i]
           });
         }
-        return callback (null, {
-          rows: rows,
-          headers: {
-            status: 200
-          }
-        });
+        return callback (null, {rows: rows, headers: {status: 200}});
       }
     }
 
@@ -326,21 +326,22 @@ module.exports = nano = function database_module (cfg) {
       });
 
       if (!list) {
-        return callback({
-          err : 404
+        return callback ({
+          err: 404
         }, {});
       }
 
       return (() => {
         const istream = new (require ('stream').Readable) ();
-        istream._read = () => {};
+        istream._read = () => {
+        };
         view_docs (design_name, view_name, params,
           (err, viewResult) => {
             var res = list.func (viewResult);
             callback (null, res.doc, res.headers);
             setTimeout (() => {
-              istream.push(JSON.stringify(res));
-              istream.push(null);
+              istream.push (JSON.stringify (res.doc));
+              istream.push (null);
             }, 500);
           });
         return istream;
@@ -377,8 +378,8 @@ module.exports = nano = function database_module (cfg) {
         callback (err, result);
       }
 
-      const testDoc = findTestDoc (docid);
       ostream.on ('close', () => {
+        const testDoc = findTestDoc (docid);
         if (testDoc) {
           testDoc.rawData = fs.readFileSync (ofile)
         }
@@ -493,4 +494,5 @@ module.exports = nano = function database_module (cfg) {
   public_functions.config = cfg;
 
   return public_functions;
-};
+}
+;

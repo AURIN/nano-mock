@@ -60,7 +60,8 @@ describe ("Nano mock", function () {
       name: "foo/bar",
       func: function (rows) {
         return [{}];
-      }
+      },
+      rows: testData.test.rows
     }]);
     db.view ("foo", "xxx", null, function (err, docs) {
       expect (err.err).to.equal (404);
@@ -80,7 +81,8 @@ describe ("Nano mock", function () {
             mimetype: rows[0].data.mimetype
           }
         }];
-      }
+      },
+      rows: testData.test.rows
     }]);
     db.view ("foo", "bar", null, function (err, docs) {
       expect (docs.rows[0].value.mimetype).to
@@ -122,11 +124,12 @@ describe ("Nano mock", function () {
             mimetype: rows[0].data.mimetype
           }
         }];
-      }
+      },
+      rows: testData.test.rows
     }]);
     nano.setTestLists ([{
       name: "foo/etc",
-      func: function (err, doc) {
+      func: function (doc) {
         return {
           doc: {
             type: doc.rows[0].value.mimetype

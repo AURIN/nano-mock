@@ -1,6 +1,6 @@
 {
   "name": "nano-mock",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Mock object for Nano",
   "private": true,
   "keywords": [

@@ -127,7 +127,7 @@ module.exports = nano = function database_module (cfg) {
         });
       }
 
-      const testDoc = findTestDoc (docid);
+      let testDoc = findTestDoc (docid);
 
       if (testDoc) {
 
@@ -141,7 +141,6 @@ module.exports = nano = function database_module (cfg) {
           };
           err["status-code"] = 409;
           return callback (err, null);
-        } else {
         }
 
         var response = {
@@ -157,6 +156,20 @@ module.exports = nano = function database_module (cfg) {
           testDoc.data.metadata.datastore.blobmetadata.timestamp = doc.data.metadata.datastore.blobmetadata.timestamp;
           return callback (getInsertErr (testDoc), response);
         }
+      } else {
+        testDoc = _.clone (doc);
+        testDoc.inserted = true;
+        testDoc.type = 'dataset';
+        testDoc.datasetid = docid;
+        testData.test.rows.push (testDoc);
+        testDoc.data.metadata.datastore.blobmetadata.timestamp = doc.data.metadata.datastore.blobmetadata.timestamp;
+        return callback (null, {
+          headers: {
+            statusCode: 201
+          },
+          id: docid,
+          rev: "1"
+        });
       }
 
       if (docid && testDoc) {
@@ -267,7 +280,6 @@ module.exports = nano = function database_module (cfg) {
 
     function view_docs (design_name, view_name, params, callback) {
 
-      var rows = new Array ();
       var i, j;
 
       // If test views are defined, finds one with the given name and
@@ -277,7 +289,7 @@ module.exports = nano = function database_module (cfg) {
           var view = testViews[j];
 
           if (view.name === (design_name + "/" + view_name)) {
-            if (!view.rows && view.file) {
+            if (view.file) {
               view.rows = JSON.parse (fs.readFileSync (view.file));
             }
             return callback (null, {
@@ -302,13 +314,18 @@ module.exports = nano = function database_module (cfg) {
         return callback ({err: 404}, null);
       } else {
         // Default view returns all rows
-        for (i = 0; i < testData.test.rows.length; i++) {
-          rows.push ({
-            key: [],
-            value: testData.test.rows[i]
-          });
-        }
-        return callback (null, {rows: rows, headers: {status: 200}});
+        return callback (null, {
+          rows: _.map (testData.test.rows, (row) => {
+            return {
+              key: [],
+              value: row
+            }
+          }),
+          headers: {
+            status: 200
+          }
+        })
+          ;
       }
     }
 

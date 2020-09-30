@@ -1,0 +1,12 @@
+steps:
+  - label: "Test"
+    key: test
+    branches: "*"
+    commands:
+      - npm ci
+      - npm test
+  - label: "Deploy"
+    key: test
+    branches: "master v*.*.*"
+    commands:
+      - npm publish

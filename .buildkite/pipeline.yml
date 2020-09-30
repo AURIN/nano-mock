@@ -1,3 +1,5 @@
+env:
+  NPM_REGISTRY: "https://repo.aurin.cloud.edu.au/repository/npm-aurin/"
 steps:
   - label: "Test"
     key: test

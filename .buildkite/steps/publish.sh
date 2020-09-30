@@ -41,7 +41,7 @@ publish() {
     fi
 
     npm publish --registry="${REGISTRY}"
-    unscope_name
+    scope_name
     npm publish --registry="${REGISTRY}"
 }
 

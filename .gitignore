@@ -2,5 +2,4 @@
 /target
 /t.sh
 /test.sh
-/package-lock.json
 /.flattened-pom.xml
